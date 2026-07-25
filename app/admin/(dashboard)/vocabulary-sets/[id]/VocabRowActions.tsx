@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { updateVocabulary, deleteVocabulary } from "@/app/admin/actions/vocab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { IconActionButton } from "@/components/icon-action-button";
 import {
   Dialog,
   DialogContent,
@@ -25,12 +28,10 @@ export function VocabRowActions({ vocab }: { vocab: Vocab }) {
   const [isPending, startTransition] = useTransition();
 
   return (
-    <div className="flex gap-2">
+    <div className="flex justify-end gap-1">
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="ghost" size="sm">
-            Sửa
-          </Button>
+          <IconActionButton label="Sửa từ" icon={<Pencil className="h-4 w-4" />} />
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
@@ -40,6 +41,7 @@ export function VocabRowActions({ vocab }: { vocab: Vocab }) {
             action={(formData) => {
               startTransition(async () => {
                 await updateVocabulary(vocab.id, formData);
+                toast.success(`Đã cập nhật "${vocab.english}"`);
                 setOpen(false);
               });
             }}
@@ -72,19 +74,20 @@ export function VocabRowActions({ vocab }: { vocab: Vocab }) {
           </form>
         </DialogContent>
       </Dialog>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-red-600 hover:text-red-700"
+      <IconActionButton
+        label="Xoá từ"
+        icon={<Trash2 className="h-4 w-4" />}
+        className="text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
         disabled={isPending}
         onClick={() => {
           if (confirm(`Xoá từ "${vocab.english}"?`)) {
-            startTransition(() => deleteVocabulary(vocab.id));
+            startTransition(async () => {
+              await deleteVocabulary(vocab.id);
+              toast.success(`Đã xoá "${vocab.english}"`);
+            });
           }
         }}
-      >
-        Xoá
-      </Button>
+      />
     </div>
   );
 }

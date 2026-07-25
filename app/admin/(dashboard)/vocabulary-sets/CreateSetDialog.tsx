@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { createSet, type SetFormState } from "@/app/admin/actions/sets";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +23,10 @@ export function CreateSetDialog() {
   const [state, formAction, pending] = useActionState(
     async (prev: SetFormState, formData: FormData) => {
       const result = await createSet(prev, formData);
-      if (!result.error) setOpen(false);
+      if (!result.error) {
+        setOpen(false);
+        toast.success(`Đã tạo bộ từ "${formData.get("title")}"`);
+      }
       return result;
     },
     initialState
@@ -30,7 +35,10 @@ export function CreateSetDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>+ Tạo bộ từ mới</Button>
+        <Button className="gap-1.5">
+          <Plus className="h-4 w-4" />
+          Tạo bộ từ mới
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
