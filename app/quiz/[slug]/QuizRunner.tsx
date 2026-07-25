@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Loader2, TimerIcon } from "lucide-react";
-import { submitAnswer } from "@/app/actions/quiz";
+import { ArrowRight, CheckCircle2, Loader2, TimerIcon, XCircle } from "lucide-react";
+import { submitAnswer, type LastAnswerFeedback } from "@/app/actions/quiz";
 import type { CurrentQuestion } from "@/lib/quiz/session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,7 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
   const [value, setValue] = useState("");
   const [remaining, setRemaining] = useState(initialQuestion.remainingMs);
   const [totalMs, setTotalMs] = useState(initialQuestion.remainingMs);
-  const [timeoutFlash, setTimeoutFlash] = useState(false);
+  const [feedback, setFeedback] = useState<LastAnswerFeedback | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const valueRef = useRef(value);
@@ -40,7 +40,7 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
         router.replace("/?e=no-attempt");
         return;
       }
-      setTimeoutFlash(result.lastWasTimeout);
+      setFeedback(result.feedback);
       setValue("");
       setTotalMs(result.question.remainingMs);
       setQuestion(result.question);
@@ -65,10 +65,10 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
   }, [question.orderIndex]);
 
   useEffect(() => {
-    if (!timeoutFlash) return;
-    const t = setTimeout(() => setTimeoutFlash(false), 1500);
+    if (!feedback) return;
+    const t = setTimeout(() => setFeedback(null), 2200);
     return () => clearTimeout(t);
-  }, [timeoutFlash]);
+  }, [feedback]);
 
   const progressPct = ((question.questionNumber - 1) / question.total) * 100;
   const timePct = Math.max(0, Math.min(100, (remaining / totalMs) * 100));
@@ -99,7 +99,7 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
         value={timePct}
         className={cn(
           "h-1.5 transition-all duration-100 [&>div]:transition-colors",
-          urgent ? "[&>div]:bg-red-600" : warn ? "[&>div]:bg-amber-500" : "[&>div]:bg-indigo-600"
+          urgent ? "[&>div]:bg-red-600" : warn ? "[&>div]:bg-amber-500" : "[&>div]:bg-primary"
         )}
       />
 
@@ -132,10 +132,28 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
               disabled={isPending}
               className="text-center text-lg transition-shadow focus-visible:shadow-md"
             />
-            {timeoutFlash && (
-              <p className="animate-in fade-in text-center text-sm font-medium text-red-600">
-                Hết thời gian!
-              </p>
+            {feedback && (
+              <div
+                className={cn(
+                  "animate-in fade-in zoom-in-95 slide-in-from-top-1 flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium duration-300",
+                  feedback.wasCorrect
+                    ? "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400"
+                    : "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400"
+                )}
+              >
+                {feedback.wasCorrect ? (
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                ) : (
+                  <XCircle className="h-4 w-4 shrink-0" />
+                )}
+                <span>
+                  {feedback.wasCorrect
+                    ? "Chính xác!"
+                    : feedback.wasTimeout
+                      ? `Hết thời gian! Đáp án đúng: ${feedback.correctAnswer}`
+                      : `Sai rồi! Đáp án đúng: ${feedback.correctAnswer}`}
+                </span>
+              </div>
             )}
             <Button
               type="submit"

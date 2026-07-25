@@ -19,6 +19,7 @@ model VocabularySet {
   passScore          Int      @map("pass_score")
   secondsPerQuestion Int      @default(20) @map("seconds_per_question")
   quizDirection      String   @default("vi_en") @map("quiz_direction")
+  allowAnswerReview  Boolean  @default(true) @map("allow_answer_review")
   isActive           Boolean  @default(true) @map("is_active")
   createdAt          DateTime @default(now()) @map("created_at")
 

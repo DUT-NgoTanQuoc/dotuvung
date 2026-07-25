@@ -75,14 +75,18 @@ export default async function AttemptDetailPage({
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">#</TableHead>
-                  <TableHead>Tiếng Việt</TableHead>
+                  <TableHead>Câu hỏi</TableHead>
                   <TableHead>Đáp án đúng</TableHead>
                   <TableHead>Học sinh trả lời</TableHead>
                   <TableHead>Kết quả</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {attempt.answers.map((a, i) => (
+                {attempt.answers.map((a, i) => {
+                  const isEnVi = a.direction === "en_vi";
+                  const prompt = isEnVi ? a.vocabulary.english : a.vocabulary.vietnamese;
+                  const correctAnswer = isEnVi ? a.vocabulary.vietnamese : a.vocabulary.english;
+                  return (
                   <TableRow
                     key={a.id}
                     className={cn(
@@ -92,8 +96,8 @@ export default async function AttemptDetailPage({
                     style={{ animationDelay: `${Math.min(i, 15) * 20}ms`, animationFillMode: "backwards" }}
                   >
                     <TableCell className="text-zinc-400">{a.orderIndex + 1}</TableCell>
-                    <TableCell>{a.vocabulary.vietnamese}</TableCell>
-                    <TableCell className="font-medium">{a.vocabulary.english}</TableCell>
+                    <TableCell>{prompt}</TableCell>
+                    <TableCell className="font-medium">{correctAnswer}</TableCell>
                     <TableCell className="text-zinc-500">
                       {a.timedOut ? (
                         <span className="italic text-amber-600">Hết giờ</span>
@@ -113,7 +117,8 @@ export default async function AttemptDetailPage({
                       )}
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

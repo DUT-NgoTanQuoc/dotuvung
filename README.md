@@ -1,4 +1,4 @@
-# Dò Từ Vựng
+# WordFind
 
 Website dò từ vựng tiếng Anh cho học sinh THCS/THPT. Giáo viên tạo bộ từ vựng theo tuần, học sinh nhập tên và làm bài (mỗi câu có giới hạn thời gian riêng, chấm điểm tự động PASS/FAIL), admin xem thống kê và lịch sử làm bài của toàn trường.
 

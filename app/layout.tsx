@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dò Từ Vựng",
+  title: "WordFind",
   description: "Ứng dụng dò từ vựng tiếng Anh cho học sinh THCS/THPT",
 };
 

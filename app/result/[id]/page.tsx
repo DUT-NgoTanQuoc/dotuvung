@@ -3,10 +3,17 @@ import { prisma } from "@/lib/prisma";
 import { readAttemptAuth } from "@/lib/quiz/session";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Clock, Home, BookX, RotateCcw } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Home, BookX, RotateCcw, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -38,10 +45,6 @@ export default async function ResultPage({
       notFound();
     }
   }
-
-  const wrongWords = attempt.answers
-    .filter((a) => !a.isCorrect)
-    .map((a) => a.vocabulary.english);
 
   const minutes = attempt.duration ? Math.floor(attempt.duration / 60) : 0;
   const seconds = attempt.duration ? attempt.duration % 60 : 0;
@@ -107,7 +110,7 @@ export default async function ResultPage({
                 <XCircle className="h-3.5 w-3.5" />
                 Sai: {wrongCount}
               </span>
-              <span className="font-medium text-indigo-600 dark:text-indigo-400">
+              <span className="font-medium text-primary">
                 Điểm: {percent}%
               </span>
             </div>
@@ -121,7 +124,7 @@ export default async function ResultPage({
           </CardContent>
         </Card>
 
-        {wrongWords.length > 0 && (
+        {attempt.set.allowAnswerReview && (
           <Card
             className="animate-in fade-in slide-in-from-bottom-2 shadow-lg shadow-zinc-200/50 duration-500 dark:shadow-none"
             style={{ animationDelay: "150ms", animationFillMode: "backwards" }}
@@ -129,16 +132,56 @@ export default async function ResultPage({
             <CardContent className="pt-6">
               <h2 className="mb-3 flex items-center gap-1.5 font-semibold text-zinc-700 dark:text-zinc-300">
                 <BookX className="h-4 w-4 text-red-500" />
-                Các từ sai ({wrongWords.length})
+                Chi tiết từng câu
               </h2>
-              <Separator className="mb-3" />
-              <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-zinc-700 dark:text-zinc-300">
-                {wrongWords.map((w, i) => (
-                  <li key={i} className="flex items-center gap-1.5 before:text-red-400 before:content-['•']">
-                    {w}
-                  </li>
-                ))}
-              </ul>
+              <div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">#</TableHead>
+                      <TableHead>Câu hỏi</TableHead>
+                      <TableHead>Đáp án đúng</TableHead>
+                      <TableHead>Bạn trả lời</TableHead>
+                      <TableHead className="w-16">Kết quả</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {attempt.answers.map((a, i) => {
+                      const isEnVi = a.direction === "en_vi";
+                      const prompt = isEnVi ? a.vocabulary.english : a.vocabulary.vietnamese;
+                      const correctAnswer = isEnVi ? a.vocabulary.vietnamese : a.vocabulary.english;
+                      return (
+                        <TableRow
+                          key={a.id}
+                          className={cn(
+                            "animate-in fade-in slide-in-from-bottom-1 duration-200",
+                            !a.isCorrect && "bg-red-50/50 dark:bg-red-950/20"
+                          )}
+                          style={{ animationDelay: `${Math.min(i, 15) * 20}ms`, animationFillMode: "backwards" }}
+                        >
+                          <TableCell className="text-zinc-400">{a.orderIndex + 1}</TableCell>
+                          <TableCell>{prompt}</TableCell>
+                          <TableCell className="font-medium">{correctAnswer}</TableCell>
+                          <TableCell className="text-zinc-500">
+                            {a.timedOut ? (
+                              <span className="italic text-amber-600">Hết giờ</span>
+                            ) : (
+                              a.userAnswer || <span className="italic text-zinc-400">(bỏ trống)</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {a.isCorrect ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <X className="h-4 w-4 text-red-600" />
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -150,7 +193,7 @@ export default async function ResultPage({
               Trang chủ
             </Link>
           </Button>
-          <Button asChild className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+          <Button asChild className="gap-2">
             <Link href={retryHref}>
               <RotateCcw className="h-4 w-4" />
               Làm lại

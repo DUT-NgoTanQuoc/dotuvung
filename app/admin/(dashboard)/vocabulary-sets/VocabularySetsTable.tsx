@@ -25,6 +25,7 @@ type SetRow = {
   passScore: number;
   secondsPerQuestion: number;
   quizDirection: string;
+  allowAnswerReview: boolean;
   isActive: boolean;
   _count: { vocabularies: number; attempts: number };
 };

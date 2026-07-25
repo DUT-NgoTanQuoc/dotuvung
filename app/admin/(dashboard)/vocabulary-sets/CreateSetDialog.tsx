@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,7 @@ export function CreateSetDialog() {
   const [open, setOpen] = useState(false);
   const [seconds, setSeconds] = useState("20");
   const [direction, setDirection] = useState("vi_en");
+  const [allowAnswerReview, setAllowAnswerReview] = useState(true);
   const [state, formAction, pending] = useActionState(
     async (prev: SetFormState, formData: FormData) => {
       const result = await createSet(prev, formData);
@@ -120,6 +122,20 @@ export function CreateSetDialog() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+            <div className="space-y-0.5">
+              <Label htmlFor="allowAnswerReview">Cho xem chi tiết đáp án</Label>
+              <p className="text-xs text-zinc-500">
+                Học sinh sẽ thấy đáp án đúng/sai từng câu sau khi nộp bài
+              </p>
+            </div>
+            <input type="hidden" name="allowAnswerReview" value={allowAnswerReview ? "on" : "off"} />
+            <Switch
+              id="allowAnswerReview"
+              checked={allowAnswerReview}
+              onCheckedChange={setAllowAnswerReview}
+            />
           </div>
           {state?.error && (
             <Alert variant="destructive">

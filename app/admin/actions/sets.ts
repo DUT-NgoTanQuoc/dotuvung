@@ -29,6 +29,7 @@ export async function createSet(_prev: SetFormState, formData: FormData): Promis
   const passScore = Number(formData.get("passScore"));
   const secondsPerQuestion = Number(formData.get("secondsPerQuestion") ?? 20);
   const quizDirection = parseQuizDirection(formData);
+  const allowAnswerReview = formData.get("allowAnswerReview") === "on";
 
   if (!title) return { error: "Vui lòng nhập tiêu đề." };
   if (!Number.isInteger(totalQuestions) || totalQuestions <= 0) {
@@ -50,7 +51,7 @@ export async function createSet(_prev: SetFormState, formData: FormData): Promis
   }
 
   await prisma.vocabularySet.create({
-    data: { title, slug, totalQuestions, passScore, secondsPerQuestion, quizDirection },
+    data: { title, slug, totalQuestions, passScore, secondsPerQuestion, quizDirection, allowAnswerReview },
   });
 
   revalidatePath("/admin/vocabulary-sets");
@@ -64,10 +65,11 @@ export async function updateSet(id: string, formData: FormData): Promise<void> {
   const passScore = Number(formData.get("passScore"));
   const secondsPerQuestion = Number(formData.get("secondsPerQuestion") ?? 20);
   const quizDirection = parseQuizDirection(formData);
+  const allowAnswerReview = formData.get("allowAnswerReview") === "on";
 
   await prisma.vocabularySet.update({
     where: { id },
-    data: { title, totalQuestions, passScore, secondsPerQuestion, quizDirection },
+    data: { title, totalQuestions, passScore, secondsPerQuestion, quizDirection, allowAnswerReview },
   });
 
   revalidatePath("/admin/vocabulary-sets");

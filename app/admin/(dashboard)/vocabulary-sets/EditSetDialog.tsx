@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { IconActionButton } from "@/components/icon-action-button";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,7 @@ type SetData = {
   passScore: number;
   secondsPerQuestion: number;
   quizDirection: string;
+  allowAnswerReview: boolean;
 };
 
 const SECONDS_OPTIONS = [5, 10, 15, 20, 30, 60];
@@ -44,6 +46,7 @@ export function EditSetDialog({ set }: { set: SetData }) {
   const [isPending, startTransition] = useTransition();
   const [seconds, setSeconds] = useState(String(set.secondsPerQuestion));
   const [direction, setDirection] = useState(set.quizDirection);
+  const [allowAnswerReview, setAllowAnswerReview] = useState(set.allowAnswerReview);
   const secondsOptions = SECONDS_OPTIONS.includes(set.secondsPerQuestion)
     ? SECONDS_OPTIONS
     : [set.secondsPerQuestion, ...SECONDS_OPTIONS];
@@ -126,6 +129,20 @@ export function EditSetDialog({ set }: { set: SetData }) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+            <div className="space-y-0.5">
+              <Label htmlFor={`edit-review-${set.id}`}>Cho xem chi tiết đáp án</Label>
+              <p className="text-xs text-zinc-500">
+                Học sinh sẽ thấy đáp án đúng/sai từng câu sau khi nộp bài
+              </p>
+            </div>
+            <input type="hidden" name="allowAnswerReview" value={allowAnswerReview ? "on" : "off"} />
+            <Switch
+              id={`edit-review-${set.id}`}
+              checked={allowAnswerReview}
+              onCheckedChange={setAllowAnswerReview}
+            />
           </div>
           <Button type="submit" className="w-full" disabled={isPending}>
             {isPending ? "Đang lưu..." : "Lưu thay đổi"}

@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Eye, History } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
+import { Eye, History, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { deleteAttempt } from "@/app/admin/actions/attempts";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -12,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SearchInput } from "@/components/search-input";
-import { LinkIconButton } from "@/components/icon-action-button";
+import { IconActionButton, LinkIconButton } from "@/components/icon-action-button";
 
 type AttemptRow = {
   id: string;
@@ -24,6 +26,25 @@ type AttemptRow = {
   finishedAt: Date | null;
   set: { title: string };
 };
+
+function DeleteAttemptButton({ id, studentName }: { id: string; studentName: string }) {
+  const [isPending, startTransition] = useTransition();
+  return (
+    <IconActionButton
+      label="Xoá lượt làm bài"
+      icon={<Trash2 className="h-4 w-4" />}
+      className="text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+      disabled={isPending}
+      onClick={() => {
+        if (!confirm(`Xoá lượt làm bài của "${studentName}"? Không thể hoàn tác.`)) return;
+        startTransition(async () => {
+          await deleteAttempt(id);
+          toast.success("Đã xoá lượt làm bài");
+        });
+      }}
+    />
+  );
+}
 
 export function AttemptsTable({ attempts }: { attempts: AttemptRow[] }) {
   const [query, setQuery] = useState("");
@@ -101,11 +122,14 @@ export function AttemptsTable({ attempts }: { attempts: AttemptRow[] }) {
                   {a.finishedAt ? new Date(a.finishedAt).toLocaleString("vi-VN") : "-"}
                 </TableCell>
                 <TableCell className="text-right">
-                  <LinkIconButton
-                    label="Xem chi tiết"
-                    icon={<Eye className="h-4 w-4" />}
-                    href={`/admin/attempts/${a.id}`}
-                  />
+                  <div className="flex justify-end gap-1">
+                    <LinkIconButton
+                      label="Xem chi tiết"
+                      icon={<Eye className="h-4 w-4" />}
+                      href={`/admin/attempts/${a.id}`}
+                    />
+                    <DeleteAttemptButton id={a.id} studentName={a.studentName} />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

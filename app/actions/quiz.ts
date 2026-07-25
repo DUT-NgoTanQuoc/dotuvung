@@ -63,8 +63,14 @@ export async function startAttempt(
   redirect(`/quiz/${set.slug}`);
 }
 
+export type LastAnswerFeedback = {
+  wasCorrect: boolean;
+  wasTimeout: boolean;
+  correctAnswer: string;
+};
+
 export type SubmitResult =
-  | { status: "next"; question: CurrentQuestion; lastWasTimeout: boolean }
+  | { status: "next"; question: CurrentQuestion; lastWasTimeout: boolean; feedback: LastAnswerFeedback | null }
   | { status: "finished"; attemptId: string }
   | { status: "error"; reason: "no_attempt" | "already_finished" };
 
@@ -90,6 +96,7 @@ export async function submitAnswer(input: {
     });
 
     let lastWasTimeout = false;
+    let feedback: LastAnswerFeedback | null = null;
 
     if (row && row.answeredAt === null) {
       const now = new Date();
@@ -108,13 +115,17 @@ export async function submitAnswer(input: {
           timedOut: late,
         },
       });
+
+      if (attempt.set.allowAnswerReview) {
+        feedback = { wasCorrect: correct, wasTimeout: late, correctAnswer: expected };
+      }
     }
 
     const resolved = await resolveCurrentQuestion(tx, attempt);
     if (resolved.status === "finished") {
       return { status: "finished", attemptId: resolved.attemptId };
     }
-    return { status: "next", question: resolved.question, lastWasTimeout };
+    return { status: "next", question: resolved.question, lastWasTimeout, feedback };
     },
     { timeout: 15000, maxWait: 10000 }
   );
