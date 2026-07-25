@@ -71,7 +71,7 @@ export type LastAnswerFeedback = {
 
 export type SubmitResult =
   | { status: "next"; question: CurrentQuestion; lastWasTimeout: boolean; feedback: LastAnswerFeedback | null }
-  | { status: "finished"; attemptId: string }
+  | { status: "finished"; attemptId: string; feedback: LastAnswerFeedback | null }
   | { status: "error"; reason: "no_attempt" | "already_finished" };
 
 export async function submitAnswer(input: {
@@ -88,7 +88,7 @@ export async function submitAnswer(input: {
       include: { set: true },
     });
     if (!attempt) return { status: "error", reason: "no_attempt" };
-    if (attempt.finishedAt) return { status: "finished", attemptId: attempt.id };
+    if (attempt.finishedAt) return { status: "finished", attemptId: attempt.id, feedback: null };
 
     const row = await tx.attemptAnswer.findUnique({
       where: { attemptId_orderIndex: { attemptId: attempt.id, orderIndex: input.orderIndex } },
@@ -123,7 +123,7 @@ export async function submitAnswer(input: {
 
     const resolved = await resolveCurrentQuestion(tx, attempt);
     if (resolved.status === "finished") {
-      return { status: "finished", attemptId: resolved.attemptId };
+      return { status: "finished", attemptId: resolved.attemptId, feedback };
     }
     return { status: "next", question: resolved.question, lastWasTimeout, feedback };
     },

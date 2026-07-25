@@ -18,6 +18,7 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
   const [remaining, setRemaining] = useState(initialQuestion.remainingMs);
   const [totalMs, setTotalMs] = useState(initialQuestion.remainingMs);
   const [feedback, setFeedback] = useState<LastAnswerFeedback | null>(null);
+  const [reviewing, setReviewing] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const valueRef = useRef(value);
@@ -32,20 +33,28 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
     const orderIndex = question.orderIndex;
     startTransition(async () => {
       const result = await submitAnswer({ orderIndex, answer });
-      if (result.status === "finished") {
-        router.replace(`/result/${result.attemptId}`);
-        return;
-      }
       if (result.status === "error") {
         router.replace("/?e=no-attempt");
         return;
       }
+
       setFeedback(result.feedback);
-      setValue("");
-      setTotalMs(result.question.remainingMs);
-      setQuestion(result.question);
-      setRemaining(result.question.remainingMs);
-      lockRef.current = false;
+      setReviewing(true);
+      const delay = result.feedback ? (result.feedback.wasCorrect ? 1000 : 2400) : 0;
+
+      setTimeout(() => {
+        if (result.status === "finished") {
+          router.replace(`/result/${result.attemptId}`);
+          return;
+        }
+        setFeedback(null);
+        setReviewing(false);
+        setValue("");
+        setTotalMs(result.question.remainingMs);
+        setQuestion(result.question);
+        setRemaining(result.question.remainingMs);
+        lockRef.current = false;
+      }, delay);
     });
   };
 
@@ -63,12 +72,6 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [question.orderIndex]);
-
-  useEffect(() => {
-    if (!feedback) return;
-    const t = setTimeout(() => setFeedback(null), 2200);
-    return () => clearTimeout(t);
-  }, [feedback]);
 
   const progressPct = ((question.questionNumber - 1) / question.total) * 100;
   const timePct = Math.max(0, Math.min(100, (remaining / totalMs) * 100));
@@ -129,8 +132,11 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
               autoCapitalize="off"
               autoCorrect="off"
               spellCheck={false}
-              disabled={isPending}
-              className="text-center text-lg transition-shadow focus-visible:shadow-md"
+              disabled={isPending || reviewing}
+              className={cn(
+                "text-center text-lg transition-shadow focus-visible:shadow-md",
+                feedback && !feedback.wasCorrect && "border-red-400 focus-visible:ring-red-400/50"
+              )}
             />
             {feedback && (
               <div
@@ -159,9 +165,9 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
               type="submit"
               className="w-full gap-2 transition-transform active:scale-[0.98]"
               size="lg"
-              disabled={isPending}
+              disabled={isPending || reviewing}
             >
-              {isPending ? (
+              {isPending || reviewing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>

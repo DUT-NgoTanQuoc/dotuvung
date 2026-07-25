@@ -13,10 +13,43 @@ import {
 } from "@/components/ui/table";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Clock, Home, BookX, RotateCcw, Check, X } from "lucide-react";
+import { Trophy, XCircle, Clock, Home, BookX, RotateCcw, Check, X, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+const CONFETTI_COLORS = ["#f59e0b", "#22c55e", "#3b82f6", "#ec4899", "#a855f7"];
+
+function Confetti() {
+  const pieces = Array.from({ length: 28 }, (_, i) => {
+    const left = Math.random() * 100;
+    const delay = Math.random() * 0.6;
+    const duration = 1.6 + Math.random() * 1.2;
+    const color = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+    const size = 6 + Math.random() * 5;
+    const rounded = i % 2 === 0;
+    return { left, delay, duration, color, size, rounded, key: i };
+  });
+
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-72 overflow-hidden">
+      {pieces.map((p) => (
+        <span
+          key={p.key}
+          className={cn("confetti-piece absolute top-0", p.rounded ? "rounded-full" : "rounded-[2px]")}
+          style={{
+            left: `${p.left}%`,
+            width: p.size,
+            height: p.size,
+            backgroundColor: p.color,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default async function ResultPage({
   params,
@@ -63,19 +96,20 @@ export default async function ResultPage({
             : "[--glow:theme(colors.red.100)] dark:[--glow:theme(colors.red.950/30)]"
         )}
       />
-      <div className="w-full max-w-md space-y-6 animate-in fade-in zoom-in-95 duration-500">
-        <Card className="overflow-hidden shadow-lg shadow-zinc-200/50 dark:shadow-none">
+      <div className="relative w-full max-w-md space-y-6 animate-in fade-in zoom-in-95 duration-500">
+        {attempt.isPass && <Confetti />}
+        <Card className="relative overflow-hidden shadow-lg shadow-zinc-200/50 dark:shadow-none">
           <CardContent className="space-y-4 pt-6 text-center">
             <div
               className={cn(
-                "mx-auto flex h-16 w-16 items-center justify-center rounded-full",
+                "pass-glow-ring mx-auto flex items-center justify-center rounded-full",
                 attempt.isPass
-                  ? "bg-green-100 text-green-600 dark:bg-green-950"
-                  : "bg-red-100 text-red-600 dark:bg-red-950"
+                  ? "pass-badge-pop h-20 w-20 bg-gradient-to-br from-primary to-green-500 text-white shadow-xl shadow-primary/30"
+                  : "h-16 w-16 bg-red-100 text-red-600 dark:bg-red-950"
               )}
             >
               {attempt.isPass ? (
-                <CheckCircle2 className="h-9 w-9 animate-in zoom-in duration-500" />
+                <Trophy className="h-10 w-10" />
               ) : (
                 <XCircle className="h-9 w-9 animate-in zoom-in duration-500" />
               )}
@@ -86,6 +120,12 @@ export default async function ResultPage({
             </h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">{attempt.set.title}</p>
 
+            {attempt.isPass && (
+              <p className="animate-in fade-in slide-in-from-bottom-1 text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-green-500 duration-500">
+                Xuất sắc! 🎉
+              </p>
+            )}
+
             <div className="text-5xl font-extrabold text-zinc-900 dark:text-zinc-50">
               {attempt.score}/{attempt.total}
             </div>
@@ -94,7 +134,7 @@ export default async function ResultPage({
               className={cn(
                 "px-4 py-1 text-sm",
                 attempt.isPass
-                  ? "bg-green-600 text-white hover:bg-green-600"
+                  ? "bg-gradient-to-r from-primary to-green-500 text-white hover:from-primary hover:to-green-500"
                   : "bg-red-600 text-white hover:bg-red-600"
               )}
             >
