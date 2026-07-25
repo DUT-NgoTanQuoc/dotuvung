@@ -11,7 +11,7 @@ export const ATTEMPT_COOKIE = "dv_attempt";
 type TxClient = Prisma.TransactionClient | PrismaClient;
 
 function normalize(input: string): string {
-  return input.trim().replace(/\s+/g, " ").toLowerCase();
+  return input.trim().replace(/\s+/g, " ").normalize("NFC").toLowerCase();
 }
 
 export function isAnswerCorrect(
