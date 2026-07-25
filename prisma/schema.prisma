@@ -17,7 +17,8 @@ model VocabularySet {
   slug               String   @unique
   totalQuestions     Int      @map("total_questions")
   passScore          Int      @map("pass_score")
-  secondsPerQuestion Int      @default(10) @map("seconds_per_question")
+  secondsPerQuestion Int      @default(20) @map("seconds_per_question")
+  quizDirection      String   @default("vi_en") @map("quiz_direction")
   isActive           Boolean  @default(true) @map("is_active")
   createdAt          DateTime @default(now()) @map("created_at")
 
@@ -33,6 +34,7 @@ model Vocabulary {
   english         String
   vietnamese      String
   acceptedAnswers String[] @default([]) @map("accepted_answers")
+  acceptedAnswersVi String[] @default([]) @map("accepted_answers_vi")
 
   set     VocabularySet   @relation(fields: [setId], references: [id], onDelete: Cascade)
   answers AttemptAnswer[]
@@ -71,6 +73,7 @@ model AttemptAnswer {
   userAnswer   String?   @map("user_answer")
   isCorrect    Boolean   @default(false) @map("is_correct")
   timedOut     Boolean   @default(false) @map("timed_out")
+  direction    String?   @map("direction")
 
   attempt    Attempt    @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   vocabulary Vocabulary @relation(fields: [vocabularyId], references: [id])

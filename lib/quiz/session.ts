@@ -16,11 +16,29 @@ function normalize(input: string): string {
 
 export function isAnswerCorrect(
   userAnswer: string,
-  english: string,
+  correct: string,
   acceptedAnswers: string[]
 ): boolean {
-  const want = [english, ...acceptedAnswers].map(normalize);
+  const want = [correct, ...acceptedAnswers].map(normalize);
   return want.includes(normalize(userAnswer));
+}
+
+export type QuizDirection = "vi_en" | "en_vi";
+
+function pickDirection(quizDirection: string): QuizDirection {
+  if (quizDirection === "en_vi") return "en_vi";
+  if (quizDirection === "mixed") return Math.random() < 0.5 ? "en_vi" : "vi_en";
+  return "vi_en";
+}
+
+/** The text the student must type to be marked correct, given the served direction. */
+export function expectedAnswer(
+  vocabulary: { english: string; vietnamese: string; acceptedAnswers: string[]; acceptedAnswersVi: string[] },
+  direction: QuizDirection
+): { correct: string; accepted: string[] } {
+  return direction === "en_vi"
+    ? { correct: vocabulary.vietnamese, accepted: vocabulary.acceptedAnswersVi }
+    : { correct: vocabulary.english, accepted: vocabulary.acceptedAnswers };
 }
 
 /** Shuffle in place (Fisher–Yates). Does not use Math.random alternatives — fine for a quiz, not crypto. */
@@ -61,7 +79,8 @@ export type CurrentQuestion = {
   orderIndex: number;
   questionNumber: number;
   total: number;
-  vietnamese: string;
+  prompt: string;
+  direction: QuizDirection;
   remainingMs: number;
 };
 
@@ -78,7 +97,12 @@ export type ResolveResult =
  */
 export async function resolveCurrentQuestion(
   tx: TxClient,
-  attempt: { id: string; total: number; setId: string; set?: { secondsPerQuestion: number } }
+  attempt: {
+    id: string;
+    total: number;
+    setId: string;
+    set?: { secondsPerQuestion: number; quizDirection: string };
+  }
 ): Promise<ResolveResult> {
   const set =
     attempt.set ?? (await tx.vocabularySet.findUniqueOrThrow({ where: { id: attempt.setId } }));
@@ -101,9 +125,10 @@ export async function resolveCurrentQuestion(
 
     if (!row.deadlineAt) {
       const deadlineAt = new Date(now.getTime() + questionMs);
+      const direction = pickDirection(set.quizDirection);
       await tx.attemptAnswer.updateMany({
         where: { id: row.id, deadlineAt: null },
-        data: { servedAt: now, deadlineAt },
+        data: { servedAt: now, deadlineAt, direction },
       });
       return {
         status: "question",
@@ -112,7 +137,8 @@ export async function resolveCurrentQuestion(
           orderIndex: row.orderIndex,
           questionNumber: row.orderIndex + 1,
           total: attempt.total,
-          vietnamese: row.vocabulary.vietnamese,
+          prompt: direction === "en_vi" ? row.vocabulary.english : row.vocabulary.vietnamese,
+          direction,
           remainingMs: questionMs,
         },
       };
@@ -120,6 +146,7 @@ export async function resolveCurrentQuestion(
 
     const remaining = row.deadlineAt.getTime() - now.getTime();
     if (remaining > 0) {
+      const direction: QuizDirection = row.direction === "en_vi" ? "en_vi" : "vi_en";
       return {
         status: "question",
         question: {
@@ -127,7 +154,8 @@ export async function resolveCurrentQuestion(
           orderIndex: row.orderIndex,
           questionNumber: row.orderIndex + 1,
           total: attempt.total,
-          vietnamese: row.vocabulary.vietnamese,
+          prompt: direction === "en_vi" ? row.vocabulary.english : row.vocabulary.vietnamese,
+          direction,
           remainingMs: remaining,
         },
       };

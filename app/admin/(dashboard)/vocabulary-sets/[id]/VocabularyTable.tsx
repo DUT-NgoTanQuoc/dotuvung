@@ -18,6 +18,7 @@ type Vocab = {
   english: string;
   vietnamese: string;
   acceptedAnswers: string[];
+  acceptedAnswersVi: string[];
 };
 
 export function VocabularyTable({ vocabularies }: { vocabularies: Vocab[] }) {
@@ -30,7 +31,8 @@ export function VocabularyTable({ vocabularies }: { vocabularies: Vocab[] }) {
       (v) =>
         v.english.toLowerCase().includes(q) ||
         v.vietnamese.toLowerCase().includes(q) ||
-        v.acceptedAnswers.some((a) => a.toLowerCase().includes(q))
+        v.acceptedAnswers.some((a) => a.toLowerCase().includes(q)) ||
+        v.acceptedAnswersVi.some((a) => a.toLowerCase().includes(q))
     );
   }, [vocabularies, query]);
 
@@ -54,14 +56,15 @@ export function VocabularyTable({ vocabularies }: { vocabularies: Vocab[] }) {
             <TableRow>
               <TableHead>English</TableHead>
               <TableHead>Vietnamese</TableHead>
-              <TableHead>Đáp án khác</TableHead>
+              <TableHead>Đáp án Anh khác</TableHead>
+              <TableHead>Đáp án Việt khác</TableHead>
               <TableHead className="text-right">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="py-10 text-center text-zinc-400">
+                <TableCell colSpan={5} className="py-10 text-center text-zinc-400">
                   <div className="flex flex-col items-center gap-2">
                     <BookX className="h-8 w-8 text-zinc-300" />
                     {vocabularies.length === 0 ? "Chưa có từ nào" : "Không tìm thấy từ phù hợp"}
@@ -78,6 +81,7 @@ export function VocabularyTable({ vocabularies }: { vocabularies: Vocab[] }) {
                 <TableCell className="font-medium">{v.english}</TableCell>
                 <TableCell>{v.vietnamese}</TableCell>
                 <TableCell className="text-zinc-500">{v.acceptedAnswers.join(", ")}</TableCell>
+                <TableCell className="text-zinc-500">{v.acceptedAnswersVi.join(", ")}</TableCell>
                 <TableCell>
                   <VocabRowActions vocab={v} />
                 </TableCell>

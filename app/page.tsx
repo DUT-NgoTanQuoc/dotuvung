@@ -4,7 +4,12 @@ import { GraduationCap } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ retrySlug?: string; retryName?: string }>;
+}) {
+  const { retrySlug, retryName } = await searchParams;
   const sets = await prisma.vocabularySet.findMany({
     where: { isActive: true },
     orderBy: { createdAt: "asc" },
@@ -27,7 +32,7 @@ export default async function Home() {
           </h1>
           <p className="text-sm text-zinc-500">Kiểm tra từ vựng tiếng Anh nhanh chóng, chính xác</p>
         </div>
-        <StartForm sets={sets} />
+        <StartForm sets={sets} defaultSlug={retrySlug} defaultName={retryName} />
       </div>
     </div>
   );

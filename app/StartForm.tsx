@@ -20,9 +20,18 @@ type SetOption = { slug: string; title: string; totalQuestions: number };
 
 const initialState: StartAttemptState = {};
 
-export function StartForm({ sets }: { sets: SetOption[] }) {
+export function StartForm({
+  sets,
+  defaultSlug,
+  defaultName,
+}: {
+  sets: SetOption[];
+  defaultSlug?: string;
+  defaultName?: string;
+}) {
   const [state, formAction, pending] = useActionState(startAttempt, initialState);
-  const [selectedSlug, setSelectedSlug] = useState(sets[0]?.slug ?? "");
+  const validDefaultSlug = defaultSlug && sets.some((s) => s.slug === defaultSlug) ? defaultSlug : undefined;
+  const [selectedSlug, setSelectedSlug] = useState(validDefaultSlug ?? sets[0]?.slug ?? "");
 
   return (
     <Card className="shadow-lg shadow-zinc-200/50 dark:shadow-none">
@@ -41,6 +50,7 @@ export function StartForm({ sets }: { sets: SetOption[] }) {
               minLength={2}
               maxLength={60}
               autoComplete="name"
+              defaultValue={defaultName ?? ""}
               autoFocus
               className="transition-shadow focus-visible:shadow-md"
             />

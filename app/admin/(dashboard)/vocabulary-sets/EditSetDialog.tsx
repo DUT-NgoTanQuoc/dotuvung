@@ -15,6 +15,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type SetData = {
   id: string;
@@ -22,11 +29,24 @@ type SetData = {
   totalQuestions: number;
   passScore: number;
   secondsPerQuestion: number;
+  quizDirection: string;
 };
+
+const SECONDS_OPTIONS = [5, 10, 15, 20, 30, 60];
+const DIRECTION_OPTIONS = [
+  { value: "vi_en", label: "Việt → Anh" },
+  { value: "en_vi", label: "Anh → Việt" },
+  { value: "mixed", label: "Trộn cả hai" },
+];
 
 export function EditSetDialog({ set }: { set: SetData }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [seconds, setSeconds] = useState(String(set.secondsPerQuestion));
+  const [direction, setDirection] = useState(set.quizDirection);
+  const secondsOptions = SECONDS_OPTIONS.includes(set.secondsPerQuestion)
+    ? SECONDS_OPTIONS
+    : [set.secondsPerQuestion, ...SECONDS_OPTIONS];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -77,14 +97,35 @@ export function EditSetDialog({ set }: { set: SetData }) {
           </div>
           <div className="space-y-2">
             <Label htmlFor={`edit-seconds-${set.id}`}>Thời gian mỗi câu (giây)</Label>
-            <Input
-              id={`edit-seconds-${set.id}`}
-              name="secondsPerQuestion"
-              type="number"
-              min={3}
-              defaultValue={set.secondsPerQuestion}
-              required
-            />
+            <input type="hidden" name="secondsPerQuestion" value={seconds} />
+            <Select value={seconds} onValueChange={setSeconds}>
+              <SelectTrigger id={`edit-seconds-${set.id}`} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {secondsOptions.map((s) => (
+                  <SelectItem key={s} value={String(s)}>
+                    {s} giây
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`edit-direction-${set.id}`}>Chiều đề</Label>
+            <input type="hidden" name="quizDirection" value={direction} />
+            <Select value={direction} onValueChange={setDirection}>
+              <SelectTrigger id={`edit-direction-${set.id}`} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DIRECTION_OPTIONS.map((d) => (
+                  <SelectItem key={d.value} value={d.value}>
+                    {d.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Button type="submit" className="w-full" disabled={isPending}>
             {isPending ? "Đang lưu..." : "Lưu thay đổi"}

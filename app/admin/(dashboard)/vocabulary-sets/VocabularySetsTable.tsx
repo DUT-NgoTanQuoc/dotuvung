@@ -24,8 +24,15 @@ type SetRow = {
   totalQuestions: number;
   passScore: number;
   secondsPerQuestion: number;
+  quizDirection: string;
   isActive: boolean;
   _count: { vocabularies: number; attempts: number };
+};
+
+const DIRECTION_LABELS: Record<string, string> = {
+  vi_en: "Việt→Anh",
+  en_vi: "Anh→Việt",
+  mixed: "Trộn",
 };
 
 export function VocabularySetsTable({ sets }: { sets: SetRow[] }) {
@@ -57,6 +64,7 @@ export function VocabularySetsTable({ sets }: { sets: SetRow[] }) {
               <TableHead>Số từ / Tổng câu</TableHead>
               <TableHead>Điểm đạt</TableHead>
               <TableHead>Giây/câu</TableHead>
+              <TableHead>Chiều đề</TableHead>
               <TableHead>Lượt làm</TableHead>
               <TableHead>Active</TableHead>
               <TableHead className="text-right">Thao tác</TableHead>
@@ -65,7 +73,7 @@ export function VocabularySetsTable({ sets }: { sets: SetRow[] }) {
           <TableBody>
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-zinc-400">
+                <TableCell colSpan={9} className="py-10 text-center text-zinc-400">
                   {sets.length === 0 ? (
                     <div className="flex flex-col items-center gap-2">
                       <BookOpenText className="h-8 w-8 text-zinc-300" />
@@ -97,6 +105,9 @@ export function VocabularySetsTable({ sets }: { sets: SetRow[] }) {
                 </TableCell>
                 <TableCell>{set.passScore}</TableCell>
                 <TableCell>{set.secondsPerQuestion}s</TableCell>
+                <TableCell>
+                  <Badge variant="outline">{DIRECTION_LABELS[set.quizDirection] ?? set.quizDirection}</Badge>
+                </TableCell>
                 <TableCell>
                   <Badge variant="secondary">{set._count.attempts}</Badge>
                 </TableCell>

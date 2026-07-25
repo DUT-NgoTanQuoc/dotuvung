@@ -29,12 +29,18 @@ export function BulkAddForm({ setId }: { setId: string }) {
       <Textarea
         name="bulk"
         rows={6}
-        placeholder={"apple | quả táo\nbanana | quả chuối\nschool | trường học | schoolhouse"}
+        placeholder={
+          "apple | quả táo\nbanana | quả chuối\nschool | trường học | schoolhouse | trường"
+        }
         required
         className="font-mono text-sm"
       />
       <p className="text-xs text-zinc-400">
-        Mỗi dòng: <code>english | vietnamese | đáp án đúng khác (tuỳ chọn, phân cách bằng dấu phẩy)</code>
+        Mỗi dòng:{" "}
+        <code>
+          english | vietnamese | đáp án Anh khác (tuỳ chọn) | đáp án Việt khác (tuỳ chọn, phân cách bằng
+          dấu phẩy)
+        </code>
       </p>
       {state?.error && (
         <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-1">

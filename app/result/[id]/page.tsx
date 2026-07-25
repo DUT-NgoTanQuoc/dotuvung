@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Clock, Home, BookX } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Home, BookX, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +45,9 @@ export default async function ResultPage({
 
   const minutes = attempt.duration ? Math.floor(attempt.duration / 60) : 0;
   const seconds = attempt.duration ? attempt.duration % 60 : 0;
+  const wrongCount = attempt.total - attempt.score;
+  const percent = attempt.total > 0 ? Math.round((attempt.score / attempt.total) * 100) : 0;
+  const retryHref = `/?retrySlug=${encodeURIComponent(attempt.set.slug)}&retryName=${encodeURIComponent(attempt.studentName)}`;
 
   return (
     <div className="relative flex min-h-screen flex-col items-center overflow-hidden bg-zinc-50 px-4 py-12 dark:bg-black">
@@ -95,6 +98,20 @@ export default async function ResultPage({
               {attempt.isPass ? "PASS" : "FAIL"}
             </Badge>
 
+            <div className="flex items-center justify-center gap-4 text-sm">
+              <span className="flex items-center gap-1 font-medium text-green-600">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Đúng: {attempt.score}
+              </span>
+              <span className="flex items-center gap-1 font-medium text-red-600">
+                <XCircle className="h-3.5 w-3.5" />
+                Sai: {wrongCount}
+              </span>
+              <span className="font-medium text-indigo-600 dark:text-indigo-400">
+                Điểm: {percent}%
+              </span>
+            </div>
+
             {attempt.duration !== null && (
               <p className="flex items-center justify-center gap-1 text-xs text-zinc-400">
                 <Clock className="h-3 w-3" />
@@ -126,12 +143,20 @@ export default async function ResultPage({
           </Card>
         )}
 
-        <Button asChild variant="outline" className="w-full gap-2">
-          <Link href="/">
-            <Home className="h-4 w-4" />
-            Về trang chủ
-          </Link>
-        </Button>
+        <div className="grid grid-cols-2 gap-3">
+          <Button asChild variant="outline" className="gap-2">
+            <Link href="/">
+              <Home className="h-4 w-4" />
+              Trang chủ
+            </Link>
+          </Button>
+          <Button asChild className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+            <Link href={retryHref}>
+              <RotateCcw className="h-4 w-4" />
+              Làm lại
+            </Link>
+          </Button>
+        </div>
       </div>
     </div>
   );

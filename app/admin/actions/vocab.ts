@@ -5,10 +5,17 @@ import { prisma } from "@/lib/prisma";
 
 export type VocabFormState = { error?: string; addedCount?: number };
 
+function parseCsv(raw: string | undefined): string[] {
+  return (raw ?? "")
+    .split(",")
+    .map((a) => a.trim())
+    .filter(Boolean);
+}
+
 /**
  * Bulk add via textarea. One vocab per line:
- *   english | vietnamese | accepted1,accepted2
- * The accepted-answers segment is optional.
+ *   english | vietnamese | acceptedEn1,acceptedEn2 | acceptedVi1,acceptedVi2
+ * Both accepted-answers segments are optional.
  */
 export async function bulkAddVocabulary(
   setId: string,
@@ -23,18 +30,29 @@ export async function bulkAddVocabulary(
 
   if (lines.length === 0) return { error: "Vui lòng nhập ít nhất một từ." };
 
-  const rows: { setId: string; english: string; vietnamese: string; acceptedAnswers: string[] }[] = [];
+  const rows: {
+    setId: string;
+    english: string;
+    vietnamese: string;
+    acceptedAnswers: string[];
+    acceptedAnswersVi: string[];
+  }[] = [];
 
   for (const line of lines) {
     const parts = line.split("|").map((p) => p.trim());
-    const [english, vietnamese, acceptedRaw] = parts;
+    const [english, vietnamese, acceptedRaw, acceptedViRaw] = parts;
     if (!english || !vietnamese) {
-      return { error: `Dòng không hợp lệ: "${line}". Định dạng: english | vietnamese | đáp án khác (tuỳ chọn)` };
+      return {
+        error: `Dòng không hợp lệ: "${line}". Định dạng: english | vietnamese | đáp án Anh khác (tuỳ chọn) | đáp án Việt khác (tuỳ chọn)`,
+      };
     }
-    const acceptedAnswers = acceptedRaw
-      ? acceptedRaw.split(",").map((a) => a.trim()).filter(Boolean)
-      : [];
-    rows.push({ setId, english, vietnamese, acceptedAnswers });
+    rows.push({
+      setId,
+      english,
+      vietnamese,
+      acceptedAnswers: parseCsv(acceptedRaw),
+      acceptedAnswersVi: parseCsv(acceptedViRaw),
+    });
   }
 
   await prisma.vocabulary.createMany({ data: rows });
@@ -45,15 +63,12 @@ export async function bulkAddVocabulary(
 export async function updateVocabulary(id: string, formData: FormData): Promise<void> {
   const english = String(formData.get("english") ?? "").trim();
   const vietnamese = String(formData.get("vietnamese") ?? "").trim();
-  const acceptedRaw = String(formData.get("acceptedAnswers") ?? "");
-  const acceptedAnswers = acceptedRaw
-    .split(",")
-    .map((a) => a.trim())
-    .filter(Boolean);
+  const acceptedAnswers = parseCsv(String(formData.get("acceptedAnswers") ?? ""));
+  const acceptedAnswersVi = parseCsv(String(formData.get("acceptedAnswersVi") ?? ""));
 
   const vocab = await prisma.vocabulary.update({
     where: { id },
-    data: { english, vietnamese, acceptedAnswers },
+    data: { english, vietnamese, acceptedAnswers, acceptedAnswersVi },
   });
 
   revalidatePath(`/admin/vocabulary-sets/${vocab.setId}`);

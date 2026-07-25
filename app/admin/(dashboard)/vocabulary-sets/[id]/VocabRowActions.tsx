@@ -21,6 +21,7 @@ type Vocab = {
   english: string;
   vietnamese: string;
   acceptedAnswers: string[];
+  acceptedAnswersVi: string[];
 };
 
 export function VocabRowActions({ vocab }: { vocab: Vocab }) {
@@ -61,11 +62,19 @@ export function VocabRowActions({ vocab }: { vocab: Vocab }) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`accepted-${vocab.id}`}>Đáp án đúng khác (phân cách bằng dấu phẩy)</Label>
+              <Label htmlFor={`accepted-${vocab.id}`}>Đáp án tiếng Anh khác (phân cách bằng dấu phẩy)</Label>
               <Input
                 id={`accepted-${vocab.id}`}
                 name="acceptedAnswers"
                 defaultValue={vocab.acceptedAnswers.join(", ")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`accepted-vi-${vocab.id}`}>Đáp án tiếng Việt khác (phân cách bằng dấu phẩy)</Label>
+              <Input
+                id={`accepted-vi-${vocab.id}`}
+                name="acceptedAnswersVi"
+                defaultValue={vocab.acceptedAnswersVi.join(", ")}
               />
             </div>
             <Button type="submit" className="w-full" disabled={isPending}>

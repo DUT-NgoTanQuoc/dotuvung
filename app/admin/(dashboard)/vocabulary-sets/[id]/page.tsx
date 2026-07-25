@@ -39,7 +39,9 @@ export default async function VocabularySetDetailPage({
         </div>
         <p className="text-sm text-zinc-500">
           {set.vocabularies.length} từ · {set.totalQuestions} câu/lượt · Điểm đạt {set.passScore} ·{" "}
-          {set.secondsPerQuestion}s/câu
+          {set.secondsPerQuestion}s/câu ·{" "}
+          {{ vi_en: "Việt→Anh", en_vi: "Anh→Việt", mixed: "Trộn Việt/Anh" }[set.quizDirection] ??
+            set.quizDirection}
         </p>
       </div>
 

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import {
   GRACE_MS,
+  expectedAnswer,
   isAnswerCorrect,
   readAttemptAuth,
   resolveCurrentQuestion,
@@ -93,7 +94,9 @@ export async function submitAnswer(input: {
     if (row && row.answeredAt === null) {
       const now = new Date();
       const late = row.deadlineAt === null || now.getTime() > row.deadlineAt.getTime() + GRACE_MS;
-      const correct = late ? false : isAnswerCorrect(input.answer, row.vocabulary.english, row.vocabulary.acceptedAnswers);
+      const direction = row.direction === "en_vi" ? "en_vi" : "vi_en";
+      const { correct: expected, accepted } = expectedAnswer(row.vocabulary, direction);
+      const correct = late ? false : isAnswerCorrect(input.answer, expected, accepted);
       lastWasTimeout = late;
 
       await tx.attemptAnswer.updateMany({

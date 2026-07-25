@@ -116,12 +116,14 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
             className="space-y-5"
           >
             <p className="text-center text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-              {question.vietnamese}
+              {question.prompt}
             </p>
             <Input
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              placeholder="Nhập từ tiếng Anh..."
+              placeholder={
+                question.direction === "en_vi" ? "Nhập nghĩa tiếng Việt..." : "Nhập từ tiếng Anh..."
+              }
               autoFocus
               autoComplete="off"
               autoCapitalize="off"

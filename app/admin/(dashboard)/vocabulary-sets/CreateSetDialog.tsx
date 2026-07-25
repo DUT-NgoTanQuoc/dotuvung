@@ -15,11 +15,27 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const initialState: SetFormState = {};
 
+const SECONDS_OPTIONS = [5, 10, 15, 20, 30, 60];
+const DIRECTION_OPTIONS = [
+  { value: "vi_en", label: "Việt → Anh" },
+  { value: "en_vi", label: "Anh → Việt" },
+  { value: "mixed", label: "Trộn cả hai" },
+];
+
 export function CreateSetDialog() {
   const [open, setOpen] = useState(false);
+  const [seconds, setSeconds] = useState("20");
+  const [direction, setDirection] = useState("vi_en");
   const [state, formAction, pending] = useActionState(
     async (prev: SetFormState, formData: FormData) => {
       const result = await createSet(prev, formData);
@@ -75,14 +91,35 @@ export function CreateSetDialog() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="secondsPerQuestion">Thời gian mỗi câu (giây)</Label>
-            <Input
-              id="secondsPerQuestion"
-              name="secondsPerQuestion"
-              type="number"
-              min={3}
-              defaultValue={10}
-              required
-            />
+            <input type="hidden" name="secondsPerQuestion" value={seconds} />
+            <Select value={seconds} onValueChange={setSeconds}>
+              <SelectTrigger id="secondsPerQuestion" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SECONDS_OPTIONS.map((s) => (
+                  <SelectItem key={s} value={String(s)}>
+                    {s} giây
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="quizDirection">Chiều đề</Label>
+            <input type="hidden" name="quizDirection" value={direction} />
+            <Select value={direction} onValueChange={setDirection}>
+              <SelectTrigger id="quizDirection" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DIRECTION_OPTIONS.map((d) => (
+                  <SelectItem key={d.value} value={d.value}>
+                    {d.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           {state?.error && (
             <Alert variant="destructive">

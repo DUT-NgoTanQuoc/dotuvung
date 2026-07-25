@@ -16,11 +16,19 @@ function slugify(input: string): string {
 
 export type SetFormState = { error?: string };
 
+const QUIZ_DIRECTIONS = ["vi_en", "en_vi", "mixed"] as const;
+
+function parseQuizDirection(formData: FormData): string {
+  const raw = String(formData.get("quizDirection") ?? "vi_en");
+  return (QUIZ_DIRECTIONS as readonly string[]).includes(raw) ? raw : "vi_en";
+}
+
 export async function createSet(_prev: SetFormState, formData: FormData): Promise<SetFormState> {
   const title = String(formData.get("title") ?? "").trim();
   const totalQuestions = Number(formData.get("totalQuestions"));
   const passScore = Number(formData.get("passScore"));
-  const secondsPerQuestion = Number(formData.get("secondsPerQuestion") ?? 10);
+  const secondsPerQuestion = Number(formData.get("secondsPerQuestion") ?? 20);
+  const quizDirection = parseQuizDirection(formData);
 
   if (!title) return { error: "Vui lòng nhập tiêu đề." };
   if (!Number.isInteger(totalQuestions) || totalQuestions <= 0) {
@@ -42,7 +50,7 @@ export async function createSet(_prev: SetFormState, formData: FormData): Promis
   }
 
   await prisma.vocabularySet.create({
-    data: { title, slug, totalQuestions, passScore, secondsPerQuestion },
+    data: { title, slug, totalQuestions, passScore, secondsPerQuestion, quizDirection },
   });
 
   revalidatePath("/admin/vocabulary-sets");
@@ -54,11 +62,12 @@ export async function updateSet(id: string, formData: FormData): Promise<void> {
   const title = String(formData.get("title") ?? "").trim();
   const totalQuestions = Number(formData.get("totalQuestions"));
   const passScore = Number(formData.get("passScore"));
-  const secondsPerQuestion = Number(formData.get("secondsPerQuestion") ?? 10);
+  const secondsPerQuestion = Number(formData.get("secondsPerQuestion") ?? 20);
+  const quizDirection = parseQuizDirection(formData);
 
   await prisma.vocabularySet.update({
     where: { id },
-    data: { title, totalQuestions, passScore, secondsPerQuestion },
+    data: { title, totalQuestions, passScore, secondsPerQuestion, quizDirection },
   });
 
   revalidatePath("/admin/vocabulary-sets");
