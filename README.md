@@ -105,7 +105,7 @@ Cả hai lệnh phải chạy sạch (không lỗi) trước khi deploy.
 
 6. Đổi mật khẩu admin mặc định sau khi deploy thật (hiện chưa có trang đổi mật khẩu trong MVP — có thể cập nhật trực tiếp qua `prisma studio` hoặc SQL, hash bằng `bcryptjs`).
 
-> **Lưu ý region**: nên chọn Vercel region gần với region Supabase (ví dụ Supabase ở Seoul thì chọn Vercel region `icn1`/gần Đông Á) để độ trễ database thấp — quan trọng vì mỗi câu hỏi có giới hạn thời gian ngắn.
+> **Lưu ý region**: dự án này dùng Supabase region **Singapore (ap-southeast-1)** — gần Việt Nam nhất trong các region Supabase hỗ trợ. File [`vercel.json`](./vercel.json) đã pin Vercel serverless function về region `sin1` (Singapore) để khớp, giảm độ trễ database xuống mức tối thiểu — quan trọng vì mỗi câu hỏi có giới hạn thời gian ngắn.
 
 ## Giới hạn MVP (cố ý không làm)
 
