@@ -12,16 +12,18 @@ datasource db {
 }
 
 model VocabularySet {
-  id                 String   @id @default(cuid())
-  title              String
-  slug               String   @unique
-  totalQuestions     Int      @map("total_questions")
-  passScore          Int      @map("pass_score")
-  secondsPerQuestion Int      @default(20) @map("seconds_per_question")
-  quizDirection      String   @default("vi_en") @map("quiz_direction")
-  allowAnswerReview  Boolean  @default(true) @map("allow_answer_review")
-  isActive           Boolean  @default(true) @map("is_active")
-  createdAt          DateTime @default(now()) @map("created_at")
+  id                   String   @id @default(cuid())
+  title                String
+  slug                 String   @unique
+  totalQuestions       Int      @map("total_questions")
+  passScore            Int      @map("pass_score")
+  secondsPerQuestion   Int      @default(20) @map("seconds_per_question")
+  quizDirection        String   @default("vi_en") @map("quiz_direction")
+  allowAnswerReview    Boolean  @default(true) @map("allow_answer_review")
+  showWrongAnswer      Boolean  @default(true) @map("show_wrong_answer")
+  wrongAnswerDisplayMs Int      @default(2400) @map("wrong_answer_display_ms")
+  isActive             Boolean  @default(true) @map("is_active")
+  createdAt            DateTime @default(now()) @map("created_at")
 
   vocabularies Vocabulary[]
   attempts     Attempt[]
@@ -30,11 +32,11 @@ model VocabularySet {
 }
 
 model Vocabulary {
-  id              String   @id @default(cuid())
-  setId           String   @map("set_id")
-  english         String
-  vietnamese      String
-  acceptedAnswers String[] @default([]) @map("accepted_answers")
+  id                String   @id @default(cuid())
+  setId             String   @map("set_id")
+  english           String
+  vietnamese        String
+  acceptedAnswers   String[] @default([]) @map("accepted_answers")
   acceptedAnswersVi String[] @default([]) @map("accepted_answers_vi")
 
   set     VocabularySet   @relation(fields: [setId], references: [id], onDelete: Cascade)

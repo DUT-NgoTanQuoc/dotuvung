@@ -30,6 +30,8 @@ export async function createSet(_prev: SetFormState, formData: FormData): Promis
   const secondsPerQuestion = Number(formData.get("secondsPerQuestion") ?? 20);
   const quizDirection = parseQuizDirection(formData);
   const allowAnswerReview = formData.get("allowAnswerReview") === "on";
+  const showWrongAnswer = formData.get("showWrongAnswer") === "on";
+  const wrongAnswerDisplayMs = Number(formData.get("wrongAnswerDisplayMs") ?? 2400);
 
   if (!title) return { error: "Vui lòng nhập tiêu đề." };
   if (!Number.isInteger(totalQuestions) || totalQuestions <= 0) {
@@ -41,6 +43,9 @@ export async function createSet(_prev: SetFormState, formData: FormData): Promis
   if (!Number.isInteger(secondsPerQuestion) || secondsPerQuestion < 3) {
     return { error: "Thời gian mỗi câu tối thiểu 3 giây." };
   }
+  if (!Number.isInteger(wrongAnswerDisplayMs) || wrongAnswerDisplayMs < 500 || wrongAnswerDisplayMs > 10000) {
+    return { error: "Thời gian hiển thị đáp án sai phải từ 0.5s đến 10s." };
+  }
 
   const baseSlug = slugify(title) || "set";
   let slug = baseSlug;
@@ -51,7 +56,17 @@ export async function createSet(_prev: SetFormState, formData: FormData): Promis
   }
 
   await prisma.vocabularySet.create({
-    data: { title, slug, totalQuestions, passScore, secondsPerQuestion, quizDirection, allowAnswerReview },
+    data: {
+      title,
+      slug,
+      totalQuestions,
+      passScore,
+      secondsPerQuestion,
+      quizDirection,
+      allowAnswerReview,
+      showWrongAnswer,
+      wrongAnswerDisplayMs,
+    },
   });
 
   revalidatePath("/admin/vocabulary-sets");
@@ -66,10 +81,21 @@ export async function updateSet(id: string, formData: FormData): Promise<void> {
   const secondsPerQuestion = Number(formData.get("secondsPerQuestion") ?? 20);
   const quizDirection = parseQuizDirection(formData);
   const allowAnswerReview = formData.get("allowAnswerReview") === "on";
+  const showWrongAnswer = formData.get("showWrongAnswer") === "on";
+  const wrongAnswerDisplayMs = Number(formData.get("wrongAnswerDisplayMs") ?? 2400);
 
   await prisma.vocabularySet.update({
     where: { id },
-    data: { title, totalQuestions, passScore, secondsPerQuestion, quizDirection, allowAnswerReview },
+    data: {
+      title,
+      totalQuestions,
+      passScore,
+      secondsPerQuestion,
+      quizDirection,
+      allowAnswerReview,
+      showWrongAnswer,
+      wrongAnswerDisplayMs,
+    },
   });
 
   revalidatePath("/admin/vocabulary-sets");

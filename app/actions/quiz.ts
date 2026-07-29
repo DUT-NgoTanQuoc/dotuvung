@@ -66,7 +66,8 @@ export async function startAttempt(
 export type LastAnswerFeedback = {
   wasCorrect: boolean;
   wasTimeout: boolean;
-  correctAnswer: string;
+  correctAnswer: string | null;
+  displayMs: number;
 };
 
 export type SubmitResult =
@@ -117,7 +118,12 @@ export async function submitAnswer(input: {
       });
 
       if (attempt.set.allowAnswerReview) {
-        feedback = { wasCorrect: correct, wasTimeout: late, correctAnswer: expected };
+        feedback = {
+          wasCorrect: correct,
+          wasTimeout: late,
+          correctAnswer: correct || !attempt.set.showWrongAnswer ? null : expected,
+          displayMs: correct ? 1000 : attempt.set.wrongAnswerDisplayMs,
+        };
       }
     }
 

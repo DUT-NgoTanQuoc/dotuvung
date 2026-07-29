@@ -40,7 +40,7 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
 
       setFeedback(result.feedback);
       setReviewing(true);
-      const delay = result.feedback ? (result.feedback.wasCorrect ? 1000 : 2400) : 0;
+      const delay = result.feedback ? result.feedback.displayMs : 0;
 
       setTimeout(() => {
         if (result.status === "finished") {
@@ -155,9 +155,13 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
                 <span>
                   {feedback.wasCorrect
                     ? "Chính xác!"
-                    : feedback.wasTimeout
-                      ? `Hết thời gian! Đáp án đúng: ${feedback.correctAnswer}`
-                      : `Sai rồi! Đáp án đúng: ${feedback.correctAnswer}`}
+                    : feedback.correctAnswer
+                      ? feedback.wasTimeout
+                        ? `Hết thời gian! Đáp án đúng: ${feedback.correctAnswer}`
+                        : `Sai rồi! Đáp án đúng: ${feedback.correctAnswer}`
+                      : feedback.wasTimeout
+                        ? "Hết thời gian!"
+                        : "Sai rồi!"}
                 </span>
               </div>
             )}

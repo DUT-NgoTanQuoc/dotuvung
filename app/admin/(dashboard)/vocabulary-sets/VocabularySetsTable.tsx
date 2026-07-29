@@ -26,6 +26,8 @@ type SetRow = {
   secondsPerQuestion: number;
   quizDirection: string;
   allowAnswerReview: boolean;
+  showWrongAnswer: boolean;
+  wrongAnswerDisplayMs: number;
   isActive: boolean;
   _count: { vocabularies: number; attempts: number };
 };
