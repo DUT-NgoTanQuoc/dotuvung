@@ -82,57 +82,54 @@ export async function submitAnswer(input: {
   const auth = await readAttemptAuth();
   if (!auth) return { status: "error", reason: "no_attempt" };
 
-  return prisma.$transaction(
-    async (tx) => {
-    const attempt = await tx.attempt.findFirst({
+  // No explicit transaction: every mutation below is a conditional atomic updateMany
+  // (`where: { ..., answeredAt/deadlineAt: null }`), so concurrent submits stay race-safe
+  // without paying for BEGIN/COMMIT round-trips on the remote DB connection.
+  const [attempt, row] = await Promise.all([
+    prisma.attempt.findFirst({
       where: { id: auth.id, sessionToken: auth.token },
       include: { set: true },
-    });
-    if (!attempt) return { status: "error", reason: "no_attempt" };
-    if (attempt.finishedAt) return { status: "finished", attemptId: attempt.id, feedback: null };
-
-    const row = await tx.attemptAnswer.findUnique({
-      where: { attemptId_orderIndex: { attemptId: attempt.id, orderIndex: input.orderIndex } },
+    }),
+    prisma.attemptAnswer.findUnique({
+      where: { attemptId_orderIndex: { attemptId: auth.id, orderIndex: input.orderIndex } },
       include: { vocabulary: true },
+    }),
+  ]);
+  if (!attempt) return { status: "error", reason: "no_attempt" };
+  if (attempt.finishedAt) return { status: "finished", attemptId: attempt.id, feedback: null };
+
+  let lastWasTimeout = false;
+  let feedback: LastAnswerFeedback | null = null;
+
+  if (row && row.answeredAt === null) {
+    const now = new Date();
+    const late = row.deadlineAt === null || now.getTime() > row.deadlineAt.getTime() + GRACE_MS;
+    const direction = row.direction === "en_vi" ? "en_vi" : "vi_en";
+    const { correct: expected, accepted } = expectedAnswer(row.vocabulary, direction);
+    const correct = late ? false : isAnswerCorrect(input.answer, expected, accepted);
+    lastWasTimeout = late;
+
+    await prisma.attemptAnswer.updateMany({
+      where: { id: row.id, answeredAt: null },
+      data: {
+        answeredAt: now,
+        userAnswer: late ? null : input.answer.trim().slice(0, 100),
+        isCorrect: correct,
+        timedOut: late,
+      },
     });
 
-    let lastWasTimeout = false;
-    let feedback: LastAnswerFeedback | null = null;
+    feedback = {
+      wasCorrect: correct,
+      wasTimeout: late,
+      correctAnswer: correct || !attempt.set.showWrongAnswer ? null : expected,
+      displayMs: correct ? 350 : attempt.set.wrongAnswerDisplayMs,
+    };
+  }
 
-    if (row && row.answeredAt === null) {
-      const now = new Date();
-      const late = row.deadlineAt === null || now.getTime() > row.deadlineAt.getTime() + GRACE_MS;
-      const direction = row.direction === "en_vi" ? "en_vi" : "vi_en";
-      const { correct: expected, accepted } = expectedAnswer(row.vocabulary, direction);
-      const correct = late ? false : isAnswerCorrect(input.answer, expected, accepted);
-      lastWasTimeout = late;
-
-      await tx.attemptAnswer.updateMany({
-        where: { id: row.id, answeredAt: null },
-        data: {
-          answeredAt: now,
-          userAnswer: late ? null : input.answer.trim().slice(0, 100),
-          isCorrect: correct,
-          timedOut: late,
-        },
-      });
-
-      if (attempt.set.allowAnswerReview) {
-        feedback = {
-          wasCorrect: correct,
-          wasTimeout: late,
-          correctAnswer: correct || !attempt.set.showWrongAnswer ? null : expected,
-          displayMs: correct ? 1000 : attempt.set.wrongAnswerDisplayMs,
-        };
-      }
-    }
-
-    const resolved = await resolveCurrentQuestion(tx, attempt);
-    if (resolved.status === "finished") {
-      return { status: "finished", attemptId: resolved.attemptId, feedback };
-    }
-    return { status: "next", question: resolved.question, lastWasTimeout, feedback };
-    },
-    { timeout: 15000, maxWait: 10000 }
-  );
+  const resolved = await resolveCurrentQuestion(prisma, attempt);
+  if (resolved.status === "finished") {
+    return { status: "finished", attemptId: resolved.attemptId, feedback };
+  }
+  return { status: "next", question: resolved.question, lastWasTimeout, feedback };
 }

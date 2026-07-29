@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, CheckCircle2, Loader2, TimerIcon, XCircle } from "lucide-react";
 import { submitAnswer, type LastAnswerFeedback } from "@/app/actions/quiz";
 import type { CurrentQuestion } from "@/lib/quiz/session";
@@ -10,6 +11,45 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+
+const CONFETTI_COLORS = ["#B0C5F6", "#F6EEBF", "#A7C7E7", "#94A3B8"];
+
+function MiniConfetti() {
+  const pieces = Array.from({ length: 14 }, (_, i) => ({
+    key: i,
+    left: (i * 37) % 100,
+    delay: (i % 5) * 0.05,
+    duration: 0.9 + (i % 4) * 0.15,
+    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    size: 5 + (i % 3) * 2,
+  }));
+
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-10 h-40 overflow-hidden">
+      {pieces.map((p) => (
+        <span
+          key={p.key}
+          className="confetti-piece absolute top-0 rounded-full"
+          style={{
+            left: `${p.left}%`,
+            width: p.size,
+            height: p.size,
+            backgroundColor: p.color,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function formatClock(ms: number) {
+  const totalSeconds = Math.ceil(ms / 1000);
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
 
 export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuestion }) {
   const router = useRouter();
@@ -26,6 +66,7 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
     valueRef.current = value;
   }, [value]);
   const lockRef = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const send = (answer: string) => {
     if (lockRef.current) return;
@@ -59,6 +100,10 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
   };
 
   useEffect(() => {
+    inputRef.current?.focus();
+  }, [question.orderIndex]);
+
+  useEffect(() => {
     lockRef.current = false;
     const deadline = performance.now() + question.remainingMs;
     const id = setInterval(() => {
@@ -76,113 +121,135 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
   const progressPct = ((question.questionNumber - 1) / question.total) * 100;
   const timePct = Math.max(0, Math.min(100, (remaining / totalMs) * 100));
   const secondsLeft = Math.ceil(remaining / 1000);
-  const urgent = secondsLeft <= 3;
-  const warn = secondsLeft <= 5 && !urgent;
+  const urgent = secondsLeft <= 5;
+
+  const showCorrectPop = feedback?.wasCorrect;
+  const showWrongShake = feedback && !feedback.wasCorrect;
 
   return (
     <div className="space-y-4">
-      <Progress value={progressPct} className="transition-all duration-500" />
-      <div className="flex items-center justify-between text-sm text-zinc-500 dark:text-zinc-400">
+      <div className="flex items-center justify-between text-sm font-medium text-[#64748B]">
         <span>
-          Câu <span className="font-semibold text-zinc-900 dark:text-zinc-50">{question.questionNumber}</span>/
+          Từ <span className="font-semibold text-[#334155]">{question.questionNumber}</span>/
           {question.total}
         </span>
-        <span
+        <motion.span
+          animate={urgent ? { scale: [1, 1.06, 1] } : {}}
+          transition={{ duration: 0.5, repeat: urgent ? Infinity : 0 }}
           className={cn(
-            "flex items-center gap-1 font-semibold transition-colors",
-            urgent && "animate-pulse text-red-600",
-            warn && "text-amber-500"
+            "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors duration-200 ease-in-out",
+            urgent ? "bg-[#F6EEBF] text-[#334155]" : "bg-[#B0C5F6] text-[#334155]"
           )}
         >
           <TimerIcon className="h-3.5 w-3.5" />
-          {secondsLeft}s
-        </span>
+          {formatClock(remaining)}
+        </motion.span>
       </div>
+
+      <Progress value={progressPct} className="h-2 bg-[#E2E8F0] transition-all duration-500 [&>div]:bg-[#B0C5F6]" />
+
       <Progress
         value={timePct}
         className={cn(
-          "h-1.5 transition-all duration-100 [&>div]:transition-colors",
-          urgent ? "[&>div]:bg-red-600" : warn ? "[&>div]:bg-amber-500" : "[&>div]:bg-primary"
+          "h-1.5 bg-[#E2E8F0] transition-all duration-100",
+          urgent ? "[&>div]:bg-[#F6EEBF]" : "[&>div]:bg-[#B0C5F6]"
         )}
       />
 
-      <Card
+      <motion.div
         key={question.orderIndex}
-        className="animate-in fade-in slide-in-from-right-2 shadow-lg shadow-zinc-200/50 duration-300 dark:shadow-none"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className={cn("relative", showWrongShake && "shake-card")}
       >
-        <CardContent className="pt-6">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              send(value);
-            }}
-            className="space-y-5"
-          >
-            <p className="text-center text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-              {question.prompt}
-            </p>
-            <Input
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder={
-                question.direction === "en_vi" ? "Nhập nghĩa tiếng Việt..." : "Nhập từ tiếng Anh..."
-              }
-              autoFocus
-              autoComplete="off"
-              autoCapitalize="off"
-              autoCorrect="off"
-              spellCheck={false}
-              disabled={isPending || reviewing}
-              className={cn(
-                "text-center text-lg transition-shadow focus-visible:shadow-md",
-                feedback && !feedback.wasCorrect && "border-red-400 focus-visible:ring-red-400/50"
-              )}
-            />
-            {feedback && (
-              <div
-                className={cn(
-                  "animate-in fade-in zoom-in-95 slide-in-from-top-1 flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium duration-300",
-                  feedback.wasCorrect
-                    ? "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400"
-                    : "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400"
-                )}
-              >
-                {feedback.wasCorrect ? (
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                ) : (
-                  <XCircle className="h-4 w-4 shrink-0" />
-                )}
-                <span>
-                  {feedback.wasCorrect
-                    ? "Chính xác!"
-                    : feedback.correctAnswer
-                      ? feedback.wasTimeout
-                        ? `Hết thời gian! Đáp án đúng: ${feedback.correctAnswer}`
-                        : `Sai rồi! Đáp án đúng: ${feedback.correctAnswer}`
-                      : feedback.wasTimeout
-                        ? "Hết thời gian!"
-                        : "Sai rồi!"}
-                </span>
-              </div>
-            )}
-            <Button
-              type="submit"
-              className="w-full gap-2 transition-transform active:scale-[0.98]"
-              size="lg"
-              disabled={isPending || reviewing}
+        {showCorrectPop && <MiniConfetti />}
+
+        <Card className="rounded-[24px] border border-white/70 bg-white shadow-[0_16px_40px_-12px_rgba(176,197,246,0.45)]">
+          <CardContent className="pt-6">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                send(value);
+              }}
+              className="space-y-5"
             >
-              {isPending || reviewing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  Tiếp tục
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <p className="text-center font-display text-[42px] leading-tight font-bold text-[#334155]">
+                {question.prompt}
+              </p>
+              <Input
+                ref={inputRef}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder={
+                  question.direction === "en_vi" ? "Nhập nghĩa tiếng Việt..." : "Nhập từ tiếng Anh..."
+                }
+                autoFocus
+                autoComplete="off"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                onCopy={(e) => e.preventDefault()}
+                onCut={(e) => e.preventDefault()}
+                onPaste={(e) => e.preventDefault()}
+                onDrop={(e) => e.preventDefault()}
+                onContextMenu={(e) => e.preventDefault()}
+                disabled={isPending || reviewing}
+                className={cn(
+                  "h-16 rounded-2xl border-transparent bg-[#F8FAFF] text-center text-2xl font-semibold text-[#334155] transition-all duration-200 ease-in-out focus-visible:border-[#B0C5F6] focus-visible:shadow-[0_0_20px_rgba(176,197,246,0.4)] focus-visible:ring-0",
+                  feedback && !feedback.wasCorrect && "border-red-300 bg-red-50"
+                )}
+              />
+              <AnimatePresence>
+                {feedback && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                    className={cn(
+                      "flex items-center justify-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium",
+                      feedback.wasCorrect ? "bg-[#EAF1FF] text-[#334155]" : "bg-red-50 text-red-600"
+                    )}
+                  >
+                    {feedback.wasCorrect ? (
+                      <CheckCircle2 className="check-pop h-4 w-4 shrink-0 text-[#6E8CDB]" />
+                    ) : (
+                      <XCircle className="h-4 w-4 shrink-0" />
+                    )}
+                    <span>
+                      {feedback.wasCorrect
+                        ? "Chính xác!"
+                        : feedback.correctAnswer
+                          ? feedback.wasTimeout
+                            ? `Hết thời gian! Đáp án đúng: ${feedback.correctAnswer}`
+                            : `Sai rồi! Đáp án đúng: ${feedback.correctAnswer}`
+                          : feedback.wasTimeout
+                            ? "Hết thời gian!"
+                            : "Sai rồi!"}
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <Button
+                type="submit"
+                className="h-12 w-full gap-2 rounded-2xl bg-[#B0C5F6] text-[#334155] transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98]"
+                size="lg"
+                disabled={isPending || reviewing}
+              >
+                {isPending || reviewing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    Tiếp tục
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }
