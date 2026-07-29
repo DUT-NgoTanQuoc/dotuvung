@@ -116,6 +116,17 @@ export default async function ResultPage({
               {attempt.studentName} · {attempt.set.title}
             </p>
 
+            <Badge
+              className={cn(
+                "px-4 py-1 text-sm font-bold tracking-wide",
+                attempt.isPass
+                  ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
+                  : "bg-red-100 text-red-600 hover:bg-red-100"
+              )}
+            >
+              {attempt.isPass ? "✅ ĐẠT" : "❌ CHƯA ĐẠT"}
+            </Badge>
+
             {tierMessage && (
               <p className="animate-in fade-in slide-in-from-bottom-1 text-lg font-bold text-[#334155] duration-500">
                 {tierMessage}
