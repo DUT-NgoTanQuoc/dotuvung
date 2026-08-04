@@ -3,9 +3,11 @@
 import { randomBytes } from "crypto";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { computeStatus } from "@/lib/exam-scheduling/status";
 import {
   GRACE_MS,
   expectedAnswer,
+  finishAttempt,
   isAnswerCorrect,
   readAttemptAuth,
   resolveCurrentQuestion,
@@ -30,9 +32,31 @@ export async function startAttempt(
     return { error: "Vui lòng chọn một bộ từ." };
   }
 
-  const set = await prisma.vocabularySet.findUnique({ where: { slug: setSlug } });
+  const set = await prisma.vocabularySet.findUnique({
+    where: { slug: setSlug },
+    include: { examSchedule: true },
+  });
   if (!set || !set.isActive) {
     return { error: "Bộ từ không tồn tại hoặc đã ngừng hoạt động." };
+  }
+
+  if (set.examSchedule) {
+    const status = computeStatus(set.examSchedule, new Date());
+    if (status === "DRAFT" || status === "SCHEDULED") {
+      return { error: "Bài kiểm tra chưa đến thời gian mở." };
+    }
+    if (status === "CLOSED" || status === "ARCHIVED") {
+      return { error: "Bài kiểm tra đã kết thúc." };
+    }
+    const { attemptLimit } = set.examSchedule;
+    if (attemptLimit !== null) {
+      const usedAttempts = await prisma.attempt.count({
+        where: { setId: set.id, studentName: { equals: studentName, mode: "insensitive" } },
+      });
+      if (usedAttempts >= attemptLimit) {
+        return { error: "Bạn đã dùng hết số lần được làm bài kiểm tra này." };
+      }
+    }
   }
 
   const vocabularies = await prisma.vocabulary.findMany({ where: { setId: set.id } });
@@ -73,6 +97,7 @@ export type LastAnswerFeedback = {
 export type SubmitResult =
   | { status: "next"; question: CurrentQuestion; lastWasTimeout: boolean; feedback: LastAnswerFeedback | null }
   | { status: "finished"; attemptId: string; feedback: LastAnswerFeedback | null }
+  | { status: "closed" }
   | { status: "error"; reason: "no_attempt" | "already_finished" };
 
 export async function submitAnswer(input: {
@@ -88,7 +113,7 @@ export async function submitAnswer(input: {
   const [attempt, row] = await Promise.all([
     prisma.attempt.findFirst({
       where: { id: auth.id, sessionToken: auth.token },
-      include: { set: true },
+      include: { set: { include: { examSchedule: true } } },
     }),
     prisma.attemptAnswer.findUnique({
       where: { attemptId_orderIndex: { attemptId: auth.id, orderIndex: input.orderIndex } },
@@ -97,6 +122,17 @@ export async function submitAnswer(input: {
   ]);
   if (!attempt) return { status: "error", reason: "no_attempt" };
   if (attempt.finishedAt) return { status: "finished", attemptId: attempt.id, feedback: null };
+
+  // Re-check the schedule at submit time, not just at start — a student whose
+  // page was already open when the exam auto-closed must not be able to
+  // keep submitting answers ("Ngay cả khi có học sinh đang mở trang").
+  if (attempt.set.examSchedule) {
+    const status = computeStatus(attempt.set.examSchedule, new Date());
+    if (status === "CLOSED" || status === "ARCHIVED") {
+      await finishAttempt(prisma, attempt.id);
+      return { status: "closed" };
+    }
+  }
 
   let lastWasTimeout = false;
   let feedback: LastAnswerFeedback | null = null;

@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { ClipboardList, CheckCircle2, XCircle, BookOpenCheck, Trophy, Medal } from "lucide-react";
+import { ClipboardList, CheckCircle2, XCircle, BookOpenCheck, Trophy, Medal, CircleDot, CalendarClock } from "lucide-react";
+import { getDashboardCounts } from "@/lib/exam-scheduling/service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -21,7 +23,7 @@ const RANK_STYLES = [
 ];
 
 export default async function AdminDashboard() {
-  const [total, passCount, activeSets, topStudents] = await Promise.all([
+  const [total, passCount, activeSets, topStudents, examCounts] = await Promise.all([
     prisma.attempt.count({ where: { finishedAt: { not: null } } }),
     prisma.attempt.count({ where: { finishedAt: { not: null }, isPass: true } }),
     prisma.vocabularySet.findMany({ where: { isActive: true }, select: { title: true } }),
@@ -31,6 +33,7 @@ export default async function AdminDashboard() {
       take: 10,
       include: { set: true },
     }),
+    getDashboardCounts(new Date()),
   ]);
 
   const failCount = total - passCount;
@@ -100,6 +103,44 @@ export default async function AdminDashboard() {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      <div>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Lịch thi</h2>
+          <Link href="/admin/exam-schedules" className="text-sm text-primary underline-offset-2 hover:underline">
+            Xem tất cả
+          </Link>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <Card>
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-zinc-500">Đang mở</CardTitle>
+              <div className="rounded-full bg-green-100 p-1.5 dark:bg-green-950">
+                <CircleDot className="h-4 w-4 text-green-600" />
+              </div>
+            </CardHeader>
+            <CardContent className="text-3xl font-bold text-green-600">{examCounts.OPEN}</CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-zinc-500">Sắp mở</CardTitle>
+              <div className="rounded-full bg-amber-100 p-1.5 dark:bg-amber-950">
+                <CalendarClock className="h-4 w-4 text-amber-600" />
+              </div>
+            </CardHeader>
+            <CardContent className="text-3xl font-bold text-amber-600">{examCounts.SCHEDULED}</CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-zinc-500">Đã đóng</CardTitle>
+              <div className="rounded-full bg-red-100 p-1.5 dark:bg-red-950">
+                <XCircle className="h-4 w-4 text-red-600" />
+              </div>
+            </CardHeader>
+            <CardContent className="text-3xl font-bold text-red-600">{examCounts.CLOSED}</CardContent>
+          </Card>
+        </div>
       </div>
 
       <Card>

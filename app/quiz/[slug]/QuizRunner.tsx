@@ -78,6 +78,10 @@ export function QuizRunner({ initialQuestion }: { initialQuestion: CurrentQuesti
         router.replace("/?e=no-attempt");
         return;
       }
+      if (result.status === "closed") {
+        router.refresh();
+        return;
+      }
 
       setFeedback(result.feedback);
       setReviewing(true);

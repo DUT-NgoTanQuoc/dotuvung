@@ -3,6 +3,8 @@ import { Geist_Mono, Poppins, Fredoka, Nunito } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/lib/theme/theme-provider";
+import { getActiveTheme } from "@/lib/theme/service";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -32,19 +34,23 @@ export const metadata: Metadata = {
   description: "Ứng dụng dò từ vựng tiếng Anh cho học sinh THCS/THPT",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const theme = await getActiveTheme();
+
   return (
     <html
       lang="vi"
       className={`${poppins.variable} ${fredoka.variable} ${nunito.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
-        <Toaster position="top-center" richColors />
+        <ThemeProvider theme={theme}>
+          <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+          <Toaster position="top-center" richColors />
+        </ThemeProvider>
       </body>
     </html>
   );

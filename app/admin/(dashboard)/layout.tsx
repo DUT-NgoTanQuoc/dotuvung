@@ -9,8 +9,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!session?.user) redirect("/admin/login");
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
-      <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/80 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/80">
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-10 border-b border-border bg-surface/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <AdminNav />
           <form

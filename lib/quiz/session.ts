@@ -201,6 +201,6 @@ export async function getAttemptFromCookie() {
   if (!auth) return null;
   return prisma.attempt.findFirst({
     where: { id: auth.id, sessionToken: auth.token },
-    include: { set: true },
+    include: { set: { include: { examSchedule: true } } },
   });
 }

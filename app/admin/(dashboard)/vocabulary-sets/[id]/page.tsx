@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileUp, CalendarClock } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { computeStatus } from "@/lib/exam-scheduling/status";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/exam/StatusBadge";
 import { BulkAddForm } from "@/app/admin/(dashboard)/vocabulary-sets/[id]/BulkAddForm";
 import { VocabularyTable } from "@/app/admin/(dashboard)/vocabulary-sets/[id]/VocabularyTable";
 
@@ -17,7 +20,7 @@ export default async function VocabularySetDetailPage({
   const { id } = await params;
   const set = await prisma.vocabularySet.findUnique({
     where: { id },
-    include: { vocabularies: { orderBy: { english: "asc" } } },
+    include: { vocabularies: { orderBy: { english: "asc" } }, examSchedule: true },
   });
   if (!set) notFound();
 
@@ -36,6 +39,18 @@ export default async function VocabularySetDetailPage({
           <Badge variant={set.isActive ? "default" : "secondary"}>
             {set.isActive ? "Active" : "Ẩn"}
           </Badge>
+          {set.examSchedule ? (
+            <Link href="/admin/exam-schedules">
+              <StatusBadge status={computeStatus(set.examSchedule, new Date())} />
+            </Link>
+          ) : (
+            <Button asChild variant="outline" size="sm" className="gap-1.5">
+              <Link href="/admin/exam-schedules">
+                <CalendarClock className="h-3.5 w-3.5" />
+                Lên lịch thi
+              </Link>
+            </Button>
+          )}
         </div>
         <p className="text-sm text-zinc-500">
           {set.vocabularies.length} từ · {set.totalQuestions} câu/lượt · Điểm đạt {set.passScore} ·{" "}
@@ -46,8 +61,14 @@ export default async function VocabularySetDetailPage({
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle>Thêm từ vựng hàng loạt</CardTitle>
+          <Button asChild variant="outline" size="sm" className="gap-1.5">
+            <Link href={`/admin/vocabulary-sets/${set.id}/import`}>
+              <FileUp className="h-3.5 w-3.5" />
+              Import từ file
+            </Link>
+          </Button>
         </CardHeader>
         <CardContent>
           <BulkAddForm setId={set.id} />

@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, BookOpenText, History } from "lucide-react";
+import { LayoutDashboard, BookOpenText, History, Paintbrush, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/vocabulary-sets", label: "Bộ từ vựng", icon: BookOpenText, exact: false },
+  { href: "/admin/exam-schedules", label: "Lịch thi", icon: CalendarClock, exact: false },
   { href: "/admin/attempts", label: "Lịch sử", icon: History, exact: false },
+  { href: "/admin/settings/theme", label: "Giao diện", icon: Paintbrush, exact: false },
 ];
 
 export function AdminNav() {
@@ -25,8 +27,8 @@ export function AdminNav() {
             className={cn(
               "flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors",
               active
-                ? "bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
-                : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                ? "bg-primary text-primary-foreground"
+                : "text-text-secondary hover:bg-surface hover:text-text"
             )}
           >
             <Icon className="h-4 w-4" />

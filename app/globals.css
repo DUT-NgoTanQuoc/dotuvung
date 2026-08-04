@@ -40,6 +40,20 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
+  /* Theme Builder token set — kept alongside the shadcn tokens above so
+     admin-editable colors (see lib/theme/tokens.ts) have matching Tailwind
+     utilities (bg-surface, text-text-secondary, border-success, etc.)
+     without disturbing the existing shadcn component classes. */
+  --color-primary-hover: var(--primary-hover);
+  --color-surface: var(--surface);
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -87,6 +101,19 @@
   --brand-secondary: #f6eebf;
   --brand-text-dark: #334155;
   --brand-text-light: #64748b;
+
+  /* Theme Builder tokens (lib/theme/tokens.ts). Defaults here match the
+     "Ocean Blue" preset / DEFAULT_THEME; overridden at runtime by the
+     <style id="website-theme-vars"> tag injected by ThemeProvider once a
+     WebsiteTheme row exists in the DB. */
+  --primary-hover: #1d4ed8;
+  --surface: #eff6ff;
+  --text: #0f172a;
+  --text-secondary: #475569;
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --info: #0284c7;
 }
 
 .dark {
@@ -126,6 +153,15 @@
   --brand-secondary: #f6eebf;
   --brand-text-dark: #eef2fb;
   --brand-text-light: #aab6cc;
+
+  --primary-hover: #3b82f6;
+  --surface: #0f1b2e;
+  --text: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #38bdf8;
 }
 
 @keyframes confetti-fall {
@@ -298,4 +334,18 @@
   html {
     @apply font-sans;
   }
+}
+
+/* Smooth theme switching: when a preset is previewed or a theme is saved,
+   fade color changes instead of flashing. Scoped to `*` but limited to the
+   three color-ish properties (not transform/opacity), so it doesn't fight
+   the transform/opacity keyframe animations declared above (float-*,
+   confetti-fall, pass-pop, etc). Kept short (180ms) to stay snap-feeling. */
+*,
+*::before,
+*::after {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
 }

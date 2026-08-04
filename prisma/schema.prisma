@@ -27,8 +27,70 @@ model VocabularySet {
 
   vocabularies Vocabulary[]
   attempts     Attempt[]
+  importLogs   ImportLog[]
+  examSchedule ExamSchedule?
 
   @@map("vocabulary_sets")
+}
+
+enum ExamStatus {
+  DRAFT
+  SCHEDULED
+  OPEN
+  CLOSED
+  ARCHIVED
+}
+
+/// Optional 1:1 scheduling extension on a VocabularySet. Sets with no
+/// ExamSchedule row behave exactly as before (always open). `status` is a
+/// cached/materialized value — the source of truth is computeStatus() in
+/// lib/exam-scheduling/status.ts, recomputed live from openAt/closeAt on every
+/// read path so correctness never depends on the cron sweep's cadence.
+model ExamSchedule {
+  id           String     @id @default(cuid())
+  setId        String     @unique @map("set_id")
+  description  String?
+  attemptLimit Int?       @map("attempt_limit")
+  openAt       DateTime   @map("open_at")
+  closeAt      DateTime   @map("close_at")
+  timezone     String     @default("Asia/Ho_Chi_Minh")
+  status       ExamStatus @default(DRAFT)
+  createdBy    String     @map("created_by")
+  updatedBy    String?    @map("updated_by")
+  publishedAt  DateTime?  @map("published_at")
+  openedAt     DateTime?  @map("opened_at")
+  openedBy     String?    @map("opened_by")
+  closedAt     DateTime?  @map("closed_at")
+  closedBy     String?    @map("closed_by")
+  archivedAt   DateTime?  @map("archived_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  set       VocabularySet  @relation(fields: [setId], references: [id], onDelete: Cascade)
+  auditLogs ExamAuditLog[]
+
+  @@index([status])
+  @@index([openAt])
+  @@index([closeAt])
+  @@map("exam_schedules")
+}
+
+/// Audit trail for exam-schedule changes: who created/edited/opened/closed a
+/// schedule (or the scheduler itself, adminId=null), and the before/after
+/// snapshot, per the scheduling logging requirement.
+model ExamAuditLog {
+  id         String   @id @default(cuid())
+  scheduleId String   @map("schedule_id")
+  adminId    String?  @map("admin_id")
+  action     String
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  schedule ExamSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@index([scheduleId])
+  @@map("exam_audit_logs")
 }
 
 model Vocabulary {
@@ -87,11 +149,75 @@ model AttemptAnswer {
   @@map("attempt_answers")
 }
 
+enum AdminRole {
+  SUPER_ADMIN
+  TEACHER
+}
+
 model AdminUser {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         AdminRole @default(SUPER_ADMIN)
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  themeAudits ThemeAuditLog[]
 
   @@map("admin_users")
+}
+
+/// Singleton row (id is always the constant "default") holding the live,
+/// admin-editable website theme. Colors are stored as validated JSON blobs
+/// (see lib/theme/validation.ts) rather than one scalar column per token so
+/// the token set can grow without a migration; typography/radius/shadow are
+/// kept as scalar columns since they're simple, low-cardinality knobs.
+model WebsiteTheme {
+  id            String   @id @default("default")
+  lightColors   Json     @map("light_colors")
+  darkColors    Json     @map("dark_colors")
+  fontSans      String   @default("Nunito") @map("font_sans")
+  fontHeading   String   @default("Fredoka") @map("font_heading")
+  radius        String   @default("1rem")
+  shadow        String   @default("md")
+  spacingScale  String   @default("normal") @map("spacing_scale")
+  previousTheme Json?    @map("previous_theme")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  updatedBy     String?  @map("updated_by")
+
+  @@map("website_themes")
+}
+
+/// Audit trail for every theme save/reset/undo — who changed it, when, from
+/// where, and the full before/after snapshot, per the admin audit requirement.
+model ThemeAuditLog {
+  id        String   @id @default(cuid())
+  adminId   String   @map("admin_id")
+  action    String
+  oldTheme  Json?    @map("old_theme")
+  newTheme  Json     @map("new_theme")
+  ip        String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  admin AdminUser @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@map("theme_audit_logs")
+}
+
+/// Audit trail for vocabulary import runs (Admin > Import từ vựng).
+model ImportLog {
+  id            String   @id @default(cuid())
+  setId         String   @map("set_id")
+  adminEmail    String   @map("admin_email")
+  source        String
+  totalRows     Int      @map("total_rows")
+  importedRows  Int      @map("imported_rows")
+  duplicateRows Int      @map("duplicate_rows")
+  errorRows     Int      @map("error_rows")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  set VocabularySet @relation(fields: [setId], references: [id], onDelete: Cascade)
+
+  @@index([setId])
+  @@map("import_logs")
 }
