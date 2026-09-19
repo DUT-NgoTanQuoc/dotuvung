@@ -212,7 +212,7 @@ async function seedSet(
 
 async function main() {
   const adminEmail = "admin@example.com";
-  const adminPassword = "12345678";
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "12345678";
   const passwordHash = await bcrypt.hash(adminPassword, 10);
 
   await prisma.adminUser.upsert({

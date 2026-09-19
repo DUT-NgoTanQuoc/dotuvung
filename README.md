@@ -46,7 +46,7 @@ npm run db:seed
 
 Tạo sẵn:
 
-- Tài khoản admin: `admin@example.com` / `12345678`
+- Tài khoản admin: `admin@example.com` / mật khẩu từ biến môi trường `ADMIN_PASSWORD` khi seed (mặc định local: `12345678`)
 - Week 1 (50 từ), Week 2 (50 từ), Week 3 (60 từ)
 
 Script seed là idempotent — chạy lại nhiều lần không tạo trùng lặp (upsert theo slug/email, reset lại danh sách từ mỗi lần).

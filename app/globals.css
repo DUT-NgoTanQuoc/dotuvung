@@ -40,6 +40,10 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --font-nunito: "Segoe UI", Arial, sans-serif;
+  --font-fredoka: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+  --font-poppins: "Segoe UI", Arial, sans-serif;
+  --font-geist-mono: "Cascadia Mono", Consolas, monospace;
 
   /* Theme Builder token set — kept alongside the shadcn tokens above so
      admin-editable colors (see lib/theme/tokens.ts) have matching Tailwind
